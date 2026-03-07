@@ -665,7 +665,7 @@ function drawIntensity(Cd) {
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h);
   drawGrid(ctx,x0,y0,pw,ph);
 
-  ctx.strokeStyle='#c8d0da'; ctx.lineWidth=1;
+  ctx.strokeStyle='#000000'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y0+ph); ctx.lineTo(x0+pw,y0+ph); ctx.stroke();
 
   const N=300;
@@ -703,7 +703,7 @@ function drawIntensity(Cd) {
     ctx.setLineDash([5,3]);
     ctx.beginPath(); ctx.moveTo(cx,y0); ctx.lineTo(cx,y0+ph); ctx.stroke();
     ctx.restore();
-    label(ctx, `Cd=${Cd.toFixed(0)}μm`, cx+5, y0+10, '#CFB87C', 9, 'left');
+    label(ctx, `Cd=${Cd.toFixed(0)}μm`, cx+5, y0+10, '#000000', 9, 'left');
   }
 
   const ecFrac = EC / getE0();
