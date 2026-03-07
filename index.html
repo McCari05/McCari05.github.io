@@ -665,7 +665,7 @@ function drawIntensity(Cd) {
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h);
   drawGrid(ctx,x0,y0,pw,ph);
 
-  ctx.strokeStyle='#000000'; ctx.lineWidth=1;
+  ctx.strokeStyle='#CFB87C'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y0+ph); ctx.lineTo(x0+pw,y0+ph); ctx.stroke();
 
   const N=300;
@@ -699,7 +699,7 @@ function drawIntensity(Cd) {
   if (Cd>0 && Cd<=SAMPLE_UM) {
     const cx = x0+(Cd/SAMPLE_UM)*pw;
     ctx.save();
-    ctx.strokeStyle='#CFB87C'; ctx.lineWidth=1.5;
+    ctx.strokeStyle='#000000'; ctx.lineWidth=1.5;
     ctx.setLineDash([5,3]);
     ctx.beginPath(); ctx.moveTo(cx,y0); ctx.lineTo(cx,y0+ph); ctx.stroke();
     ctx.restore();
@@ -714,7 +714,7 @@ function drawIntensity(Cd) {
     ctx.setLineDash([3,4]);
     ctx.beginPath(); ctx.moveTo(x0,ey); ctx.lineTo(x0+pw,ey); ctx.stroke();
     ctx.restore();
-    label(ctx, 'Ec/E₀', x0-4, ey, '#a89155', 8, 'right');
+    label(ctx, 'Ec/E₀', x0-4, ey, '#000000', 8, 'right');
   }
 
   [0,200,400,600,800,1000].forEach(d=>{
