@@ -706,17 +706,6 @@ function drawIntensity(Cd) {
     label(ctx, `Cd=${Cd.toFixed(0)}μm`, cx+5, y0+10, '#000000', 9, 'left');
   }
 
-  const ecFrac = EC / getE0();
-  if (ecFrac>0 && ecFrac<1) {
-    const ey = y0+ph - ecFrac*ph;
-    ctx.save();
-    ctx.strokeStyle='rgba(168,145,85,0.55)'; ctx.lineWidth=1;
-    ctx.setLineDash([3,4]);
-    ctx.beginPath(); ctx.moveTo(x0,ey); ctx.lineTo(x0+pw,ey); ctx.stroke();
-    ctx.restore();
-    label(ctx, 'Ec/E₀', x0-4, ey, '#000000', 8, 'right');
-  }
-
   [0,200,400,600,800,1000].forEach(d=>{
     label(ctx, d.toString(), x0+(d/1000)*pw, y0+ph+14, '#8c959f', 9);
   });
