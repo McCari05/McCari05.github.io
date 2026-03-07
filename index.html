@@ -127,6 +127,13 @@
     box-shadow: 0 0 8px rgba(124,58,237,0.6);
   }
   .range-bounds { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); }
+  .fixed-param {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 12px; margin-bottom: 4px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 5px;
+    font-size: 12px; color: var(--muted);
+  }
+  .fixed-val { font-size: 13px; font-weight: 600; color: var(--accent3); font-variant-numeric: tabular-nums; }
   .divider { height: 1px; background: var(--border); margin: 18px 0; }
 
   .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
@@ -196,28 +203,25 @@
       <div class="param-group">
         <div class="param-label">
           <span class="param-name">Incident Exposure E<sub>0</sub></span>
-          <span><span class="param-value" id="e0-val">100</span><span class="param-unit"> mJ/cm²</span></span>
+          <span><span class="param-value" id="e0-val">30</span><span class="param-unit"> mJ/cm²</span></span>
         </div>
-        <input type="range" id="e0-slider" min="5" max="800" step="1" value="100">
-        <div class="range-bounds"><span>5</span><span>800 mJ/cm²</span></div>
+        <input type="range" id="e0-slider" min="10" max="200" step="1" value="30">
+        <div class="range-bounds"><span>10</span><span>200 mJ/cm²</span></div>
       </div>
 
       <div class="param-group">
         <div class="param-label">
           <span class="param-name">Photoabsorber [A]</span>
-          <span><span class="param-value" id="conc-val">0.010</span><span class="param-unit"> M</span></span>
+          <span><span class="param-value" id="conc-val">0.030</span><span class="param-unit"> M</span></span>
         </div>
-        <input type="range" id="conc-slider" min="0.001" max="0.100" step="0.001" value="0.010">
-        <div class="range-bounds"><span>0.001</span><span>0.100 M</span></div>
+        <!-- slider drives log scale: value = log10([A]*1000), range 0.5–2 → 0.003–0.100 M -->
+        <input type="range" id="conc-slider" min="0.5" max="2.0" step="0.01" value="1.477">
+        <div class="range-bounds"><span>0.003 M</span><span>0.100 M</span></div>
       </div>
 
-      <div class="param-group">
-        <div class="param-label">
-          <span class="param-name">Critical Exposure E<sub>c</sub></span>
-          <span><span class="param-value" id="ec-val">10.0</span><span class="param-unit"> mJ/cm²</span></span>
-        </div>
-        <input type="range" id="ec-slider" min="1" max="100" step="0.5" value="10">
-        <div class="range-bounds"><span>1</span><span>100 mJ/cm²</span></div>
+      <div class="fixed-param">
+        <span class="param-name">Critical Exposure E<sub>c</sub></span>
+        <span class="fixed-val">10 <span class="param-unit">mJ/cm²</span></span>
       </div>
 
       <div class="divider"></div>
@@ -335,7 +339,8 @@
         <div class="card-header"><span class="card-title">Live Equations</span></div>
         <div class="eq-box" id="eq-box">—</div>
         <div class="footnote">
-          ε (molar absorptivity) is fixed at 1000 M⁻¹cm⁻¹ — a typical value for common acrylate photoinitiators.
+          ε (molar absorptivity) is fixed at 1000 M⁻¹cm⁻¹ and E_c (critical exposure) is fixed at 10 mJ/cm² —
+          both are typical values for common acrylate photoinitiator systems.
           D_p = 1/(ε·[A]) is the depth at which light attenuates to 1/e (~37%) of I₀.
           The O₂ model uses C_d = (D_p/n)·ln(I₀ⁿ·t/E_c), where n ∈ (0.68, 1) accounts for
           radical scavenging by dissolved oxygen. Setting n = 1 recovers the standard Jacob's equation.
@@ -350,12 +355,12 @@
 // ── Constants ──────────────────────────────────────────────────────────────────
 const EPS       = 1000;   // fixed molar absorptivity M⁻¹cm⁻¹
 const SAMPLE_UM = 1000;   // sample thickness μm
+const EC        = 10;     // fixed critical exposure mJ/cm²
 
 // ── State ──────────────────────────────────────────────────────────────────────
 const S = {
-  E0:   100,
-  conc: 0.010,
-  Ec:   10,
+  E0:   30,
+  conc: 0.030,   // mol/L  (log-scale slider)
   oxyOn: false,
   n:    0.85,
   irr:  50,
@@ -370,11 +375,11 @@ function getDp() {
 function getCd() {
   const Dp = getDp();
   if (!S.oxyOn) {
-    if (S.E0 <= S.Ec) return 0;
-    return Dp * Math.log(S.E0 / S.Ec);
+    if (S.E0 <= EC) return 0;
+    return Dp * Math.log(S.E0 / EC);
   } else {
     // Modified Jacob's: Cd = (Dp/n)*ln(I0^n * t / Ec)
-    const arg = Math.pow(S.irr, S.n) * S.t / S.Ec;
+    const arg = Math.pow(S.irr, S.n) * S.t / EC;
     if (arg <= 1) return 0;
     return (Dp / S.n) * Math.log(arg);
   }
@@ -581,7 +586,7 @@ function drawIntensity(Cd) {
   }
 
   // Ec/E0 horizontal
-  const ecFrac = S.Ec/S.E0;
+  const ecFrac = EC/S.E0;
   if (ecFrac>0 && ecFrac<1) {
     const ey = y0+ph - ecFrac*ph;
     ctx.save();
@@ -620,7 +625,7 @@ function drawWorking(Cd) {
   ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y0+ph); ctx.lineTo(x0+pw,y0+ph); ctx.stroke();
 
   const logMin=Math.log10(5), logMax=Math.log10(800);
-  const yMax=Math.max(Dp*Math.log(800/S.Ec)*1.2, 100);
+  const yMax=Math.max(Dp*Math.log(800/EC)*1.2, 100);
   const xP = lx => x0+((lx-logMin)/(logMax-logMin))*pw;
   const yP = cd => y0+ph-(Math.max(cd,0)/yMax)*ph;
 
@@ -634,7 +639,7 @@ function drawWorking(Cd) {
   for (let i=0;i<=N;i++) {
     const lx=logMin+(i/N)*(logMax-logMin);
     const E=Math.pow(10,lx);
-    const cd=E<=S.Ec ? 0 : Dp*Math.log(E/S.Ec);
+    const cd=E<=EC ? 0 : Dp*Math.log(E/EC);
     ctx.lineTo(xP(lx),yP(cd));
   }
   ctx.lineTo(xP(logMax),y0+ph);
@@ -645,7 +650,7 @@ function drawWorking(Cd) {
   for (let i=0;i<=N;i++) {
     const lx=logMin+(i/N)*(logMax-logMin);
     const E=Math.pow(10,lx);
-    const cd=E<=S.Ec ? 0 : Dp*Math.log(E/S.Ec);
+    const cd=E<=EC ? 0 : Dp*Math.log(E/EC);
     i===0 ? ctx.moveTo(xP(lx),yP(cd)) : ctx.lineTo(xP(lx),yP(cd));
   }
   ctx.stroke();
@@ -666,7 +671,7 @@ function drawWorking(Cd) {
   }
 
   // Ec intercept
-  const ecLx=Math.log10(S.Ec);
+  const ecLx=Math.log10(EC);
   if (ecLx>=logMin && ecLx<=logMax) {
     const px=xP(ecLx);
     ctx.save(); ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1;
@@ -679,7 +684,7 @@ function drawWorking(Cd) {
   // Dp annotation
   const midLx=logMin+0.55*(logMax-logMin);
   const midE=Math.pow(10,midLx);
-  const midCd=midE<=S.Ec ? 0 : Dp*Math.log(midE/S.Ec);
+  const midCd=midE<=EC ? 0 : Dp*Math.log(midE/EC);
   if (midCd>20) label(ctx,`Dp=${Dp.toFixed(0)}μm`,xP(midLx)+6,yP(midCd)-10,'#f59e0b',9,'left');
 
   // x ticks
@@ -724,9 +729,9 @@ function update() {
   if (!S.oxyOn) {
     eq.innerHTML=
       `D_p = 1/(ε·[A]) = 1/(1000 × ${S.conc.toFixed(3)}) = <span class="val">${(getDp()/1e4).toExponential(2)} cm = ${Dp.toFixed(0)} μm</span><br>`+
-      `C_d = D_p · ln(E₀/E_c) = ${Dp.toFixed(0)} · ln(${S.E0}/${S.Ec}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
+      `C_d = D_p · ln(E₀/E_c) = ${Dp.toFixed(0)} · ln(${S.E0}/${EC}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
   } else {
-    const arg=(Math.pow(S.irr,S.n)*S.t/S.Ec).toFixed(3);
+    const arg=(Math.pow(S.irr,S.n)*S.t/EC).toFixed(3);
     eq.innerHTML=
       `D_p = <span class="val">${Dp.toFixed(0)} μm</span> &nbsp;|&nbsp; n=${S.n} &nbsp;|&nbsp; I₀=${S.irr} mW/cm² &nbsp;|&nbsp; t=${S.t} s<br>`+
       `C_d = (D_p/n)·ln(I₀ⁿ·t/E_c) = (${Dp.toFixed(0)}/${S.n})·ln(${arg}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
@@ -746,11 +751,16 @@ function bind(sid, key, did, fmt) {
   });
 }
 bind('e0-slider',  'E0',   'e0-val',   v=>v.toFixed(0));
-bind('conc-slider','conc', 'conc-val', v=>v.toFixed(3));
-bind('ec-slider',  'Ec',   'ec-val',   v=>v.toFixed(1));
 bind('n-slider',   'n',    'n-val',    v=>v.toFixed(2));
 bind('irr-slider', 'irr',  'irr-val',  v=>v.toFixed(0));
 bind('t-slider',   't',    't-val',    v=>v.toFixed(1));
+
+// Concentration: log-scale slider
+document.getElementById('conc-slider').addEventListener('input', function() {
+  S.conc = Math.pow(10, parseFloat(this.value)) / 1000;
+  document.getElementById('conc-val').textContent = S.conc.toFixed(3);
+  update();
+});
 
 function setOxy(on) {
   S.oxyOn=on;
@@ -761,17 +771,19 @@ function setOxy(on) {
 }
 
 const PRESETS={
-  standard:{E0:100,conc:0.010,Ec:10},
-  highabs: {E0:200,conc:0.050,Ec:10},
-  lowdose: {E0:20, conc:0.010,Ec:15},
-  highres: {E0:50, conc:0.040,Ec:5 },
+  standard:{E0:30,  conc:0.030},
+  highabs: {E0:60,  conc:0.080},
+  lowdose: {E0:15,  conc:0.020},
+  highres: {E0:25,  conc:0.060},
 };
 function loadPreset(name) {
   const p=PRESETS[name];
-  S.E0=p.E0; S.conc=p.conc; S.Ec=p.Ec;
-  document.getElementById('e0-slider').value=p.E0;   document.getElementById('e0-val').textContent=p.E0;
-  document.getElementById('conc-slider').value=p.conc; document.getElementById('conc-val').textContent=p.conc.toFixed(3);
-  document.getElementById('ec-slider').value=p.Ec;   document.getElementById('ec-val').textContent=p.Ec.toFixed(1);
+  S.E0=p.E0; S.conc=p.conc;
+  document.getElementById('e0-slider').value=p.E0;
+  document.getElementById('e0-val').textContent=p.E0;
+  // set log slider position: log10(conc*1000)
+  document.getElementById('conc-slider').value=Math.log10(p.conc*1000).toFixed(3);
+  document.getElementById('conc-val').textContent=p.conc.toFixed(3);
   update();
 }
 
