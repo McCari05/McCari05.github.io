@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DLP Cure Depth Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --surface2: #f0f3f7;
+    --border: #d0d7de;
+    --border-light: #e8ecf0;
+    --accent: #CFB87C;
+    --accent-soft: #fdf6e3;
+    --accent2: #a89155;
+    --accent2-soft: #f5edcf;
+    --amber: #9a6700;
+    --amber-soft: #fff8c5;
+    --red: #cf222e;
+    --red-soft: #fff0ee;
+    --text: #1f2328;
+    --text-secondary: #57606a;
+    --text-muted: #8c959f;
+    --shadow: 0 1px 3px rgba(27,31,36,0.12), 0 8px 24px rgba(66,74,83,0.06);
+    --shadow-sm: 0 1px 2px rgba(27,31,36,0.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+  }
+  .topbar-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #CFB87C, #a89155);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .topbar-icon svg { width: 16px; height: 16px; fill: white; }
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .topbar-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .topbar-sep { color: var(--border); font-size: 18px; }
+
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 48px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ── Panel ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);#fed7aa
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 20px;
+  }
+  .panel-header {
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--surface2);
+  }
+  .panel-header-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .panel-body { padding: 18px; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-label:first-child { margin-top: 0; }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-light);
+  }
+
+  /* ── Computed badge ── */
+  .computed-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--accent-soft);
+    border: 1px solid #e8d4a0;
+    border-radius: 7px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+  }
+  .computed-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .computed-value {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .computed-unit { font-size: 11px; font-weight: 400; opacity: 0.7; margin-left: 2px; }
+
+  /* ── Sliders ── */
+  .param-group { margin-bottom: 18px; }
+  .param-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .param-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .param-name sub { font-size: 9px; }
+  .param-value-display {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid #e8d4a0;
+    border-radius: 5px;
+    padding: 1px 7px;
+  }
+  .param-unit-inline { font-size: 10px; font-weight: 400; opacity: 0.75; margin-left: 2px; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    outline: none;
+    margin-bottom: 5px;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--surface);
+    cursor: pointer;
+    border: 2px solid var(--accent);
+    box-shadow: 0 1px 4px rgba(207,184,124,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(207,184,124,0.4);
+  }
+  .range-bounds {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* O2 inhibition single slider */
+  .oxy-slider-wrap input[type="range"]::-webkit-slider-thumb {
+    border-color: #a89155;
+    box-shadow: 0 1px 4px rgba(168,145,85,0.3);
+  }
+  .oxy-slider-wrap input[type="range"] {
+    background: linear-gradient(to right, var(--border), var(--border));
+  }
+  .oxy-value-display {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: #a89155;
+    background: #fdf6e3;
+    border: 1px solid #e8d4a0;
+    border-radius: 5px;
+    padding: 1px 7px;
+  }
+  .oxy-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  .divider { height: 1px; background: var(--border-light); margin: 18px 0; }
+
+  /* ── Metric cards ── */
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .metric {
+    background: var(--surface2);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 11px 12px;
+  }
+  .metric-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  .metric-value {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .metric-value.blue  { color: var(--accent); }
+  .metric-value.green { color: #a89155; }
+  .metric-value.amber { color: var(--amber); }
+  .metric-value.red   { color: var(--red); }
+  .metric-value.gray  { color: var(--text-secondary); }
+  .metric-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+
+  /* ── Status bar ── */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 13px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .status-bar.ok   { background: var(--accent2-soft); border: 1px solid #d4bc80; color: var(--accent2); }
+  .status-bar.warn { background: var(--amber-soft);   border: 1px solid #e4c97b; color: var(--amber); }
+  .status-bar.bad  { background: var(--red-soft);     border: 1px solid #ffc2c0; color: var(--red); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+  /* ── Viz area ── */
+  .viz-area { display: flex; flex-direction: column; gap: 18px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 18px 11px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--surface2);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .card-pill {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2px 9px;
+    border-radius: 20px;
+  }
+  .card-body { padding: 18px; }
+
+  canvas { display: block; }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex-wrap: wrap;
+  }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  .eq-box {
+    background: var(--surface2);
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    padding: 13px 16px;
+    font-family: 'Source Code Pro', monospace;
+    font-size: 12px;
+    line-height: 2.1;
+    color: var(--text-secondary);
+  }
+  .eq-box .val { color: var(--accent); font-weight: 600; }
+  .footnote {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    line-height: 1.7;
+    border-top: 1px solid var(--border-light);
+    padding-top: 12px;
+    font-weight: 400;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-icon">
+    <svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 1.5a5.5 5.5 0 110 11 5.5 5.5 0 010-11zM7 5v4.5l3.5 2-.5.87L6 10V5z"/></svg>
+  </div>
+  <span class="topbar-title">DLP Cure Depth Simulator</span>
+  <span class="topbar-sep">/</span>
+  <span class="topbar-sub">Jacob's Working Curve · Beer–Lambert · 1 mm resin</span>
+</div>
+
+<div class="container">
+  <div class="layout">
+
+    <aside class="panel">
+      <div class="panel-header">
+        <div class="panel-header-title">Parameters</div>
+      </div>
+      <div class="panel-body">
+
+        <div class="section-label">Light Source</div>
+
+        <div class="param-group">
+          <div class="param-label">
+            <span class="param-name">Irradiance I₀</span>
+            <span class="param-value-display" id="irr-val">50<span class="param-unit-inline">mW/cm²</span></span>
+          </div>
+          <input type="range" id="irr-slider" min="1" max="200" step="1" value="50">
+          <div class="range-bounds"><span>1 mW/cm²</span><span>200 mW/cm²</span></div>
+        </div>
+
+        <div class="param-group">
+          <div class="param-label">
+            <span class="param-name">Exposure Time t</span>
+            <span class="param-value-display" id="t-val">2.0<span class="param-unit-inline">s</span></span>
+          </div>
+          <input type="range" id="t-slider" min="0.1" max="10" step="0.1" value="2">
+          <div class="range-bounds"><span>0.1 s</span><span>10 s</span></div>
+        </div>
+
+        <div class="computed-row">
+          <span class="computed-label">Incident Exposure E₀</span>
+          <span class="computed-value" id="e0-computed">100<span class="computed-unit">mJ/cm²</span></span>
+        </div>
+
+        <div class="section-label">Resin</div>
+
+        <div class="param-group">
+          <div class="param-label">
+            <span class="param-name">Photoabsorber [A]</span>
+            <span class="param-value-display" id="conc-val">0.030<span class="param-unit-inline">M</span></span>
+          </div>
+          <input type="range" id="conc-slider" min="0.7" max="2.0" step="0.01" value="1.477">
+          <div class="range-bounds"><span>0.005 M</span><span>0.100 M</span></div>
+        </div>
+
+        <div class="section-label">O₂ Inhibition</div>
+
+        <div class="param-group oxy-slider-wrap">
+          <div class="param-label">
+            <span class="param-name">Inhibition strength</span>
+            <span class="oxy-value-display" id="n-label">None</span>
+          </div>
+          <input type="range" id="n-slider" min="0" max="1" step="0.01" value="0">
+          <div class="range-bounds"><span>None (n=1)</span><span>Strong (n=0.68)</span></div>
+          <div class="oxy-hint" id="n-hint">Standard Jacob's equation — no O₂ correction</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-label">Cure Depth</div>
+            <div class="metric-value blue" id="m-cd">—</div>
+            <div class="metric-sub">μm</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Penetration D_p</div>
+            <div class="metric-value green" id="m-dp">—</div>
+            <div class="metric-sub">μm</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">I at 1 mm</div>
+            <div class="metric-value gray" id="m-i1mm">—</div>
+            <div class="metric-sub">% of I₀</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Sample fill</div>
+            <div class="metric-value gray" id="m-fill">—</div>
+            <div class="metric-sub">% cured</div>
+          </div>
+        </div>
+
+        <div class="status-bar ok" id="status-bar">
+          <div class="status-dot"></div>
+          <span id="status-text">Ready</span>
+        </div>
+
+      </div>
+    </aside>
+
+    <div class="viz-area">
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Sample Cross-Section (1 mm depth)</span>
+          <span class="card-pill" id="cd-tag">Cd = — μm</span>
+        </div>
+        <div class="card-body">
+          <canvas id="sample-canvas"></canvas>
+          <div class="legend">
+            <span><span class="swatch" style="background:#CFB87C"></span>Cured polymer</span>
+            <span><span class="swatch" style="background:#dde3ed"></span>Liquid resin</span>
+            <span><span class="swatch" style="background:#CFB87C; height:3px; border-radius:0; margin-top:4px"></span>Cure boundary</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Light Intensity Profile</span>
+          <span class="card-pill">I(z) = I₀ · exp(−ε[A]z)</span>
+        </div>
+        <div class="card-body">
+          <canvas id="intensity-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Live Equations</span>
+        </div>
+        <div class="card-body">
+          <div class="eq-box" id="eq-box">—</div>
+          <div class="footnote">
+            ε (molar absorptivity) is fixed at 1000 M⁻¹cm⁻¹ and E_c (critical exposure) is fixed at 10 mJ/cm² —
+            both are typical values for common acrylate photoinitiator systems.
+            D_p = 1/(ε·[A]) is the depth at which light attenuates to 1/e (~37%) of I₀.
+            The O₂ model uses C_d = (D_p/n)·ln(I₀ⁿ·t/E_c), where n ∈ (0.68, 1) accounts for
+            radical scavenging by dissolved oxygen. Sliding to "None" sets n = 1, recovering standard Jacob's equation.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const EPS       = 1000;
+const SAMPLE_UM = 1000;
+const EC        = 10;
+
+const S = {
+  irr:  50,
+  t:    2.0,
+  conc: 0.030,
+  n:    1.0,   // 1 = no O2, 0.68 = strong
+};
+
+function getE0() { return S.irr * S.t; }  // mJ/cm²
+
+function getDp() { return 1e4 / (EPS * S.conc); }
+
+function getCd() {
+  const Dp  = getDp();
+  const arg = Math.pow(S.irr, S.n) * S.t / EC;
+  if (arg <= 1) return 0;
+  return (Dp / S.n) * Math.log(arg);
+}
+
+function beerFrac(z_cm) {
+  return Math.exp(-EPS * S.conc * z_cm);
+}
+
+// ── Canvas helpers ─────────────────────────────────────────────────────────────
+function getCanvas(id, heightPx) {
+  const c   = document.getElementById(id);
+  const dpr = window.devicePixelRatio || 1;
+  const w   = c.parentElement.clientWidth - 36;
+  const h   = heightPx;
+  c.width   = w * dpr;
+  c.height  = h * dpr;
+  c.style.width  = w + 'px';
+  c.style.height = h + 'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h };
+}
+
+function drawGrid(ctx, x0, y0, pw, ph) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+  ctx.lineWidth   = 0.5;
+  for (let i = 0; i <= 8; i++) {
+    const x = x0 + (i/8)*pw;
+    ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y0+ph); ctx.stroke();
+  }
+  for (let i = 0; i <= 5; i++) {
+    const y = y0 + (i/5)*ph;
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x0+pw,y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function label(ctx, s, x, y, color, size, align) {
+  ctx.save();
+  ctx.fillStyle    = color || '#8c959f';
+  ctx.font         = `${size||9}px 'Nunito', sans-serif`;
+  ctx.fontWeight   = '600';
+  ctx.textAlign    = align || 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+  ctx.restore();
+}
+
+function drawSample(Cd) {
+  const { ctx, w, h } = getCanvas('sample-canvas', 260);
+  const PL=60, PR=16, PT=22, PB=16;
+  const pw=w-PL-PR, ph=h-PT-PB;
+  const x0=PL, y0=PT;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,w,h);
+
+  // liquid resin
+  ctx.fillStyle = '#dde3ed';
+  ctx.fillRect(x0, y0, pw, ph);
+
+  const fillFrac = Math.min(Math.max(Cd,0), SAMPLE_UM) / SAMPLE_UM;
+  const curedPx  = fillFrac * ph;
+
+  if (curedPx > 0.5) {
+    const grd = ctx.createLinearGradient(0, y0, 0, y0+curedPx);
+    grd.addColorStop(0,   'rgba(207,184,124,0.9)');
+    grd.addColorStop(0.7, 'rgba(168,145,85,0.75)');
+    grd.addColorStop(1,   'rgba(120,100,50,0.45)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(x0, y0, pw, curedPx);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(207,184,124,0.5)';
+    ctx.shadowBlur  = 8;
+    ctx.strokeStyle = '#CFB87C';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0+curedPx);
+    ctx.lineTo(x0+pw, y0+curedPx);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle    = '#CFB87C';
+    ctx.font         = "bold 10px 'Nunito', sans-serif";
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`← ${Cd.toFixed(0)} μm`, x0+8, y0+curedPx-3);
+    ctx.restore();
+  }
+
+  if (Cd >= SAMPLE_UM) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(224,82,82,0.35)';
+    ctx.lineWidth   = 1.5;
+    for (let i=-ph; i<pw+ph; i+=14) {
+      ctx.beginPath();
+      ctx.moveTo(x0+i, y0+ph);
+      ctx.lineTo(x0+i+ph, y0);
+      ctx.stroke();
+    }
+    ctx.restore();
+    label(ctx, 'OVER-CURE', x0+pw/2, y0+ph-14, '#e05252', 11);
+  }
+
+  ctx.strokeStyle = '#c8d0da';
+  ctx.lineWidth   = 1;
+  ctx.strokeRect(x0, y0, pw, ph);
+
+  // UV arrows
+  ctx.save();
+  ctx.strokeStyle = 'rgba(207,184,124,0.8)';
+  ctx.lineWidth   = 1.5;
+  const nA = 6;
+  for (let i=0; i<nA; i++) {
+    const ax = x0 + pw*(i+1)/(nA+1);
+    ctx.beginPath(); ctx.moveTo(ax, y0-12); ctx.lineTo(ax, y0-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ax-3, y0-7); ctx.lineTo(ax, y0-2); ctx.lineTo(ax+3, y0-7); ctx.stroke();
+  }
+  ctx.restore();
+  label(ctx, 'UV', x0+pw/2, y0-15, 'rgba(207,184,124,0.9)', 9);
+
+  const ticks = [0,200,400,600,800,1000];
+  ctx.save();
+  ctx.strokeStyle = '#c8d0da';
+  ctx.lineWidth   = 0.5;
+  ticks.forEach(d => {
+    const ty = y0 + (d/SAMPLE_UM)*ph;
+    ctx.beginPath(); ctx.moveTo(x0-5, ty); ctx.lineTo(x0, ty); ctx.stroke();
+    label(ctx, d.toString(), x0-8, ty, '#8c959f', 9, 'right');
+  });
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(14, y0+ph/2);
+  ctx.rotate(-Math.PI/2);
+  label(ctx, 'Depth (μm)', 0, 0, '#8c959f', 10);
+  ctx.restore();
+}
+
+function drawIntensity(Cd) {
+  const { ctx, w, h } = getCanvas('intensity-canvas', 210);
+  const PL=56, PR=18, PT=16, PB=38;
+  const pw=w-PL-PR, ph=h-PT-PB;
+  const x0=PL, y0=PT;
+
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h);
+  drawGrid(ctx,x0,y0,pw,ph);
+
+  ctx.strokeStyle='#c8d0da'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y0+ph); ctx.lineTo(x0+pw,y0+ph); ctx.stroke();
+
+  const N=300;
+  const grd = ctx.createLinearGradient(x0,y0,x0,y0+ph);
+  grd.addColorStop(0, 'rgba(207,184,124,0.3)');
+  grd.addColorStop(1, 'rgba(207,184,124,0.02)');
+
+  ctx.beginPath();
+  ctx.moveTo(x0, y0+ph);
+  for (let i=0; i<=N; i++) {
+    const z  = (i/N)*0.1;
+    const fr = beerFrac(z);
+    const px = x0+(i/N)*pw;
+    const py = y0+ph - fr*ph;
+    ctx.lineTo(px,py);
+  }
+  ctx.lineTo(x0+pw, y0+ph);
+  ctx.closePath();
+  ctx.fillStyle=grd; ctx.fill();
+
+  ctx.beginPath(); ctx.strokeStyle='#CFB87C'; ctx.lineWidth=2.5;
+  for (let i=0; i<=N; i++) {
+    const z  = (i/N)*0.1;
+    const fr = beerFrac(z);
+    const px = x0+(i/N)*pw;
+    const py = y0+ph - fr*ph;
+    i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  if (Cd>0 && Cd<=SAMPLE_UM) {
+    const cx = x0+(Cd/SAMPLE_UM)*pw;
+    ctx.save();
+    ctx.strokeStyle='#CFB87C'; ctx.lineWidth=1.5;
+    ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(cx,y0); ctx.lineTo(cx,y0+ph); ctx.stroke();
+    ctx.restore();
+    label(ctx, `Cd=${Cd.toFixed(0)}μm`, cx+5, y0+10, '#CFB87C', 9, 'left');
+  }
+
+  const ecFrac = EC / getE0();
+  if (ecFrac>0 && ecFrac<1) {
+    const ey = y0+ph - ecFrac*ph;
+    ctx.save();
+    ctx.strokeStyle='rgba(168,145,85,0.55)'; ctx.lineWidth=1;
+    ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.moveTo(x0,ey); ctx.lineTo(x0+pw,ey); ctx.stroke();
+    ctx.restore();
+    label(ctx, 'Ec/E₀', x0-4, ey, '#a89155', 8, 'right');
+  }
+
+  [0,200,400,600,800,1000].forEach(d=>{
+    label(ctx, d.toString(), x0+(d/1000)*pw, y0+ph+14, '#8c959f', 9);
+  });
+  [0,25,50,75,100].forEach(p=>{
+    label(ctx, p+'%', x0-6, y0+ph-(p/100)*ph, '#8c959f', 9, 'right');
+  });
+  label(ctx, 'Depth z (μm)', x0+pw/2, y0+ph+28, '#8c959f', 10);
+  ctx.save(); ctx.translate(13,y0+ph/2); ctx.rotate(-Math.PI/2);
+  label(ctx,'I(z) / I₀',0,0,'#8c959f',10); ctx.restore();
+}
+
+function update() {
+  const E0   = getE0();
+  const Cd   = getCd();
+  const Dp   = getDp();
+  const i1   = beerFrac(0.1)*100;
+  const fill = Math.min(Cd/SAMPLE_UM*100, 100);
+
+  document.getElementById('e0-computed').innerHTML = E0.toFixed(0) + '<span class="computed-unit">mJ/cm²</span>';
+  document.getElementById('cd-tag').textContent    = `Cd = ${Cd>0?Cd.toFixed(0):'0'} μm`;
+  document.getElementById('m-cd').textContent      = Cd>0?Cd.toFixed(0):'0';
+  document.getElementById('m-dp').textContent      = Dp.toFixed(0);
+  document.getElementById('m-i1mm').textContent    = i1.toFixed(1);
+  document.getElementById('m-fill').textContent    = fill.toFixed(1);
+
+  const cdEl = document.getElementById('m-cd');
+  cdEl.className = 'metric-value ' + (Cd<=0?'red':Cd>=SAMPLE_UM?'amber':'blue');
+
+  const sb = document.getElementById('status-bar');
+  const st = document.getElementById('status-text');
+  if (Cd<=0) {
+    sb.className='status-bar bad'; st.textContent='Below cure threshold — increase irradiance or exposure time';
+  } else if (Cd>=SAMPLE_UM) {
+    sb.className='status-bar warn'; st.textContent=`Over-cure — ${Cd.toFixed(0)} μm exceeds 1 mm sample`;
+  } else {
+    sb.className='status-bar ok'; st.textContent=`Cured ${fill.toFixed(1)}% of sample (${Cd.toFixed(0)} / 1000 μm)`;
+  }
+
+  const nEff = S.n;
+  if (nEff >= 0.999) {
+    const arg = (E0/EC).toFixed(2);
+    document.getElementById('eq-box').innerHTML =
+      `E₀ = I₀ × t = ${S.irr} × ${S.t.toFixed(1)} = <span class="val">${E0.toFixed(0)} mJ/cm²</span><br>` +
+      `D_p = 1/(ε·[A]) = 1/(1000 × ${S.conc.toFixed(3)}) = <span class="val">${Dp.toFixed(0)} μm</span><br>` +
+      `C_d = D_p · ln(E₀/E_c) = ${Dp.toFixed(0)} · ln(${arg}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
+  } else {
+    const arg = (Math.pow(S.irr,nEff)*S.t/EC).toFixed(3);
+    document.getElementById('eq-box').innerHTML =
+      `E₀ = I₀ × t = ${S.irr} × ${S.t.toFixed(1)} = <span class="val">${E0.toFixed(0)} mJ/cm²</span><br>` +
+      `D_p = <span class="val">${Dp.toFixed(0)} μm</span>  |  n = ${nEff.toFixed(2)} (O₂ inhibition)<br>` +
+      `C_d = (D_p/n)·ln(I₀ⁿ·t/E_c) = (${Dp.toFixed(0)}/${nEff.toFixed(2)})·ln(${arg}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
+  }
+
+  drawSample(Cd);
+  drawIntensity(Cd);
+}
+
+// ── Slider bindings ────────────────────────────────────────────────────────────
+document.getElementById('irr-slider').addEventListener('input', function() {
+  S.irr = parseFloat(this.value);
+  document.getElementById('irr-val').innerHTML = S.irr.toFixed(0) + '<span class="param-unit-inline">mW/cm²</span>';
+  update();
+});
+document.getElementById('t-slider').addEventListener('input', function() {
+  S.t = parseFloat(this.value);
+  document.getElementById('t-val').innerHTML = S.t.toFixed(1) + '<span class="param-unit-inline">s</span>';
+  update();
+});
+document.getElementById('conc-slider').addEventListener('input', function() {
+  S.conc = Math.pow(10, parseFloat(this.value)) / 1000;
+  document.getElementById('conc-val').innerHTML = S.conc.toFixed(3) + '<span class="param-unit-inline">M</span>';
+  update();
+});
+document.getElementById('n-slider').addEventListener('input', function() {
+  // 0 = no inhibition (n=1), 1 = strong inhibition (n=0.68)
+  const raw = parseFloat(this.value);
+  S.n = 1 - raw * (1 - 0.68);
+  const labels = ['None', 'Mild', 'Moderate', 'Strong'];
+  const idx = raw < 0.01 ? 0 : raw < 0.4 ? 1 : raw < 0.75 ? 2 : 3;
+  const nLabel = document.getElementById('n-label');
+  const hints  = [
+    'Standard Jacob\'s equation — no O₂ correction',
+    `Mild inhibition — n = ${S.n.toFixed(2)}, slight undercure near surface`,
+    `Moderate inhibition — n = ${S.n.toFixed(2)}, noticeable cure depth reduction`,
+    `Strong inhibition — n = ${S.n.toFixed(2)}, significant undercure`
+  ];
+  nLabel.textContent = labels[idx];
+  document.getElementById('n-hint').textContent = hints[idx];
+  update();
+});
+
+window.addEventListener('load', update);
+window.addEventListener('resize', update);
+</script>
+</body>
+</html>
