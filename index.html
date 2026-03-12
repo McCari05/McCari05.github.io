@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DLP Cure Depth Simulator</title>
+<title>Digital Light Processing (DLP) Cure Depth Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -374,8 +374,8 @@
             <span class="param-name">Irradiance I₀</span>
             <span class="param-value-display" id="irr-val">50<span class="param-unit-inline">mW/cm²</span></span>
           </div>
-          <input type="range" id="irr-slider" min="1" max="200" step="1" value="50">
-          <div class="range-bounds"><span>1 mW/cm²</span><span>200 mW/cm²</span></div>
+          <input type="range" id="irr-slider" min="1" max="500" step="1" value="50">
+          <div class="range-bounds"><span>1 mW/cm²</span><span>500 mW/cm²</span></div>
         </div>
 
         <div class="param-group">
@@ -460,7 +460,7 @@
           <div class="legend">
             <span><span class="swatch" style="background:#CFB87C"></span>Cured polymer</span>
             <span><span class="swatch" style="background:#dde3ed"></span>Liquid resin</span>
-            <span><span class="swatch" style="background:#CFB87C; height:3px; border-radius:0; margin-top:4px"></span>Cure boundary</span>
+            <span><span class="swatch" style="background:#000000; height:3px; border-radius:0; margin-top:4px"></span>Cure boundary</span>
           </div>
         </div>
       </div>
