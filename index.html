@@ -746,17 +746,17 @@ function update() {
 
   const nEff = S.n;
   if (nEff >= 0.999) {
-    const arg = (E0/EC).toFixed(2);
+    const arg = (E0/EC).toFixed(10);
     document.getElementById('eq-box').innerHTML =
-      `E₀ = I₀ × t = ${S.irr} × ${S.t.toFixed(1)} = <span class="val">${E0.toFixed(0)} mJ/cm²</span><br>` +
-      `D_p = 1/(ε·[A]) = 1/(1000 × ${S.conc.toFixed(3)}) = <span class="val">${Dp.toFixed(0)} μm</span><br>` +
-      `C_d = D_p · ln(E₀/E_c) = ${Dp.toFixed(0)} · ln(${arg}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
+      `E₀ = I₀ × t = ${S.irr} × ${S.t.toFixed(10)} = <span class="val">${E0.toFixed(10)} mJ/cm²</span><br>` +
+      `D_p = 1/(ε·[A]) = 1/(1000 × ${S.conc.toFixed(10)}) = <span class="val">${Dp.toFixed(10)} μm</span><br>` +
+      `C_d = D_p · ln(E₀/E_c) = ${Dp.toFixed(10)} · ln(${arg}) = <span class="val">${Cd.toFixed(10)} μm</span>`;
   } else {
-    const arg = (Math.pow(S.irr,nEff)*S.t/EC).toFixed(3);
+    const arg = (Math.pow(S.irr,nEff)*S.t/EC).toFixed(10);
     document.getElementById('eq-box').innerHTML =
-      `E₀ = I₀ × t = ${S.irr} × ${S.t.toFixed(1)} = <span class="val">${E0.toFixed(0)} mJ/cm²</span><br>` +
-      `D_p = <span class="val">${Dp.toFixed(0)} μm</span>  |  n = ${nEff.toFixed(2)} (O₂ inhibition)<br>` +
-      `C_d = (D_p/n)·ln(I₀ⁿ·t/E_c) = (${Dp.toFixed(0)}/${nEff.toFixed(2)})·ln(${arg}) = <span class="val">${Cd.toFixed(1)} μm</span>`;
+      `E₀ = I₀ × t = ${S.irr} × ${S.t.toFixed(10)} = <span class="val">${E0.toFixed(10)} mJ/cm²</span><br>` +
+      `D_p = <span class="val">${Dp.toFixed(10)} μm</span>  |  n = ${nEff.toFixed(10)} (O₂ inhibition)<br>` +
+      `C_d = (D_p/n)·ln(I₀ⁿ·t/E_c) = (${Dp.toFixed(10)}/${nEff.toFixed(10)})·ln(${arg}) = <span class="val">${Cd.toFixed(10)} μm</span>`;
   }
 
   drawSample(Cd);
